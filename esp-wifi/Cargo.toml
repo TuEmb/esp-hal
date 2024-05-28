@@ -12,7 +12,7 @@ categories = ["embedded", "hardware-support", "no-std"]
 
 [dependencies]
 defmt = { version = "0.3.6", optional = true }
-esp-hal = { version = "0.17.0", path = "../esp-hal", default-features = false }
+esp-hal = { git = "https://github.com/esp-rs/esp-hal", branch = "main", default-features = false }
 smoltcp = { version = "0.11.0", default-features = false, features = [
   "medium-ethernet",
   "socket-raw",
