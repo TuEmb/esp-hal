@@ -1846,7 +1846,6 @@ mod asynch {
                 }
                 // Check that the peripheral is not already transmitting a packet.
                 if !status.tx_buf_st().bit_is_set() {
-                    info!("status: {}\r", status.bits());
                     return Poll::Pending;
                 }
 
@@ -1866,6 +1865,7 @@ mod asynch {
         pub async fn receive_async(&mut self) -> Result<EspTwaiFrame, EspTwaiError> {
             self.twai.enable_interrupts();
             poll_fn(|cx| {
+                info!("invoke receive function\r");
                 self.twai.async_state().err_waker.register(cx.waker());
 
                 if let Poll::Ready(result) = self.twai.async_state().rx_queue.poll_receive(cx) {
