@@ -1380,8 +1380,6 @@ where
 pub enum EspTwaiError {
     /// TWAI peripheral has entered a bus-off state.
     BusOff,
-    /// RX/TX error counter has reached/exceeded
-    WarningLimit,
     /// The received frame contains an invalid DLC.
     NonCompliantDlc(u8),
     /// Encapsulates errors defined by the embedded-hal crate.
@@ -1847,20 +1845,19 @@ mod asynch {
                     return Poll::Ready(Err(EspTwaiError::BusOff));
                 }
 
-                // Check if the RX/TX error counter has reached or exceeded.
-                if status.err_st().bit_is_set() {
-                    // Read the current TX error counter value
-                    let tx_err_cnt = register_block.tx_err_cnt().read().tx_err_cnt().bits();
-                    info!("tx error counter is : {}", tx_err_cnt);
-                    // Write the incremented TX error count back
-                    register_block
-                        .tx_err_cnt()
-                        .write(|w| unsafe { w.tx_err_cnt().bits(tx_err_cnt + 1) });
-                    return Poll::Ready(Err(EspTwaiError::WarningLimit));
-                }
-
                 // Check that the peripheral is not already transmitting a packet.
                 if !status.tx_buf_st().bit_is_set() {
+                    // Check if the RX/TX error counter has reached or exceeded.
+                    if status.err_st().bit_is_set() {
+                        // Read the current TX error counter value
+                        let tx_err_cnt = register_block.tx_err_cnt().read().tx_err_cnt().bits();
+                        info!("tx error counter is : {}", tx_err_cnt);
+                        // warn!("RX/TX error counter has reached or exceeded");
+                        // Write the incremented TX error count back
+                        register_block
+                            .tx_err_cnt()
+                            .write(|w| unsafe { w.tx_err_cnt().bits(tx_err_cnt + 1) });
+                    }
                     return Poll::Pending;
                 }
 
@@ -1888,11 +1885,6 @@ mod asynch {
                 
                 let register_block = self.twai.register_block();
                 let status = register_block.status().read();
-
-                // Check if the RX/TX error counter has reached or exceeded.
-                if status.err_st().bit_is_set() {
-                    return Poll::Ready(Err(EspTwaiError::WarningLimit));
-                }
 
                 // Check that the peripheral is not in a bus off state.
                 if status.bus_off_st().bit_is_set() {
@@ -1957,7 +1949,6 @@ mod asynch {
         }
         
         if intr_status.bits() & 0b11111100 > 0 {
-            info!("Error interrupt: {}\r", intr_status.bits());
             async_state.err_waker.wake();
             async_state.tx_waker.wake();
         }
