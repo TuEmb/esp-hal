@@ -1936,9 +1936,8 @@ mod asynch {
             }
         }
         
-        info!("INTR STATUS: {:?}", intr_status.bits());
         if intr_status.bits() & 0b11111100 > 0 {
-            info!("ERR_WAKER INVOKED");
+            info!("ERR_WAKER INVOKED\r");
             async_state.err_waker.wake();
         }
 
