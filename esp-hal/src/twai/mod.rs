@@ -1936,9 +1936,9 @@ mod asynch {
             }
         }
         
-        esp_println::println!("INTR STATUS: {intr_status:?}");
+        info!("INTR STATUS: {:?}", intr_status.bits());
         if intr_status.bits() & 0b11111100 > 0 {
-            esp_println::println!("ERR_WAKER INVOKED");
+            info!("ERR_WAKER INVOKED");
             async_state.err_waker.wake();
         }
 
