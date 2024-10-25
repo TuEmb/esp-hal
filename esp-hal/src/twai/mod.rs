@@ -1849,6 +1849,12 @@ mod asynch {
 
                 // Check if the RX/TX error counter has reached or exceeded.
                 if status.err_st().bit_is_set() {
+                    // Read the current TX error counter value
+                    let current_tx_err_cnt = register_block.tx_err_cnt().read().tx_err_cnt().bits();
+                    // Write the incremented TX error count back
+                    register_block
+                        .tx_err_cnt()
+                        .write(|w| unsafe { w.tx_err_cnt().bits(current_tx_err_cnt + 1) });
                     return Poll::Ready(Err(EspTwaiError::WarningLimit));
                 }
 
