@@ -1865,15 +1865,15 @@ mod asynch {
         pub async fn receive_async(&mut self) -> Result<EspTwaiFrame, EspTwaiError> {
             self.twai.enable_interrupts();
             poll_fn(|cx| {
-                info!("invoke receive function\r");
                 self.twai.async_state().err_waker.register(cx.waker());
-
+                
                 if let Poll::Ready(result) = self.twai.async_state().rx_queue.poll_receive(cx) {
                     return Poll::Ready(result);
                 }
-
+                
                 let register_block = self.twai.register_block();
                 let status = register_block.status().read();
+                info!("invoke receive function - status: {:?}\r", status.bits());
 
                 // Check that the peripheral is not in a bus off state.
                 if status.bus_off_st().bit_is_set() {
