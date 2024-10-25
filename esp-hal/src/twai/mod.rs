@@ -1380,6 +1380,8 @@ where
 pub enum EspTwaiError {
     /// TWAI peripheral has entered a bus-off state.
     BusOff,
+    /// RX/TX error counter has reached/exceeded
+    WarningLimit,
     /// The received frame contains an invalid DLC.
     NonCompliantDlc(u8),
     /// Encapsulates errors defined by the embedded-hal crate.
@@ -1844,8 +1846,19 @@ mod asynch {
                 if status.bus_off_st().bit_is_set() {
                     return Poll::Ready(Err(EspTwaiError::BusOff));
                 }
+
                 // Check that the peripheral is not already transmitting a packet.
                 if !status.tx_buf_st().bit_is_set() {
+                    // Check if the RX/TX error counter has reached or exceeded.
+                    if status.err_st().bit_is_set() {
+                        // Read the current TX error counter value
+                        let tx_err_cnt = register_block.tx_err_cnt().read().tx_err_cnt().bits();
+                        // Write the incremented TX error count back
+                        register_block
+                            .tx_err_cnt()
+                            .write(|w| unsafe { w.tx_err_cnt().bits(tx_err_cnt + 1) });
+                        return Poll::Ready(Err(EspTwaiError::WarningLimit));
+                    }
                     return Poll::Pending;
                 }
 
