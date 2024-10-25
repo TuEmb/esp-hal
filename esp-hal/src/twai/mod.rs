@@ -1846,6 +1846,7 @@ mod asynch {
                 }
                 // Check that the peripheral is not already transmitting a packet.
                 if !status.tx_buf_st().bit_is_set() {
+                    info!("status: {}\r", status.bits());
                     return Poll::Pending;
                 }
 
@@ -1937,7 +1938,7 @@ mod asynch {
         }
         
         if intr_status.bits() & 0b11111100 > 0 {
-            info!("ERR_WAKER INVOKED\r");
+            info!("Error interrupt: {}\r", intr_status.bits());
             async_state.err_waker.wake();
             async_state.tx_waker.wake();
         }
