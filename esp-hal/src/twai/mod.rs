@@ -1908,6 +1908,7 @@ mod asynch {
             if #[cfg(any(esp32, esp32c3, esp32s2, esp32s3))] {
                 let intr_enable = register_block.int_ena().read();
                 let intr_status = register_block.int_raw().read();
+                let err_capture = register_block.err_code_cap().read();
 
                 let int_ena_reg = register_block.int_ena();
 
@@ -1950,6 +1951,13 @@ mod asynch {
         }
 
         if intr_status.bits() & 0b11111100 > 0 {
+            let status = register_block.status().read();
+            if !err_capture.ecc_direction().bit_is_set() &&
+                !status.tx_buf_st().bit_is_set() {
+                    register_block.cmd().write(|w| {
+                        w.abort_tx().set_bit()
+                    });
+            }
             async_state.err_waker.wake();
         }
 
